@@ -3,20 +3,20 @@ author: Brian Schrader
 since: 2016-07-11
 """
 
-import sys, os, re
-from time import sleep
 from collections import namedtuple
+from time import sleep
+import argparse
 import glob
 import hashlib
+import sys, os, re
 
-import argparse
-
-from pygtail import Pygtail
+from dateutil.parser import parse as dt_parse
 from lxml import objectify, etree, html
 from lxml.builder import E
-from dateutil.parser import parse as dt_parse
 from parse import parse
-import PyRSS2Gen
+from pygtail import Pygtail
+
+from lib import PyRSS2Gen
 
 
 LogLine = namedtuple('LogLine', 'timestamp user link')
@@ -142,7 +142,6 @@ def main():
         for line in Pygtail(latest, offset_file=offset_file):
             parsed_line = get_log_line(line, args.format)
             if parsed_line:
-                print(line)
                 text = get_text_from_file(args.output)
                 with open(args.output, 'w') as out:
                     out.write(formatter(text, parsed_line))
