@@ -72,18 +72,37 @@ def get_text_from_file(filename):
         return ''
 
 
+def get_file(input):
+    """ If the input is a file, return it, else return the most recent file
+    that matches the pattern given.
+    """
+    if os.path.isfile(input):
+        return input
+
+    if os.path.isdir(input):
+        input = '%s/*' % input
+
+    files = sorted(glob.glob(input))
+
+    if not files:
+        return None
+
+    return files[-1]
+
+
 # Begin Formatters
 
 
-def xml_formatter(existing, line):
+def xml_formatter(existing, line, name='', description=''):
     elements = get_elements_from_old_xml(existing) if existing else []
     rss = PyRSS2Gen.RSS2(
-        title='IRC Log Links',
-        description='A collection of links extracted from logs.',
+        title=name,
+        description=description,
         link='',
 
         items = [
             PyRSS2Gen.RSSItem(
+                guid=hashlib.md5(line.link.encode('utf-8')).hexdigest(),
                 title=line.user,
                 description=line.link,
                 pubDate=line.timestamp
@@ -110,6 +129,12 @@ def main():
             'More coming soon.'
             'Default: %(default)s',
             default='xml')
+    parser.add_argument('-n', '--name',
+            help='A name for the output feed.',
+            default='Link Log')
+    parser.add_argument('-d', '--description',
+            help='A description for the output feed.',
+            default='Link Log')
     parser.add_argument('-f', '--format',
             help='The format of incomming messages.'
             'See this spec for more info: \n'
@@ -126,15 +151,14 @@ def main():
 
     # Find the most recent file.
 
-    files = sorted(glob.glob('%s/*' % args.input))
-    if not files:
+    latest = get_file(args.input)
+    if not latest:
         print("No files found.")
         return
 
-    latest = files[-1]
     offset_file = (args.offset
             if args.offset
-            else '/tmp/%s' % hashlib.md5(latest.encode('utf-8')).hexdigest())
+            else '/tmp/link-logger-%s' % hashlib.md5(latest.encode('utf-8')).hexdigest())
 
     # Parse the logs.
 
@@ -144,7 +168,8 @@ def main():
             if parsed_line:
                 text = get_text_from_file(args.output)
                 with open(args.output, 'w') as out:
-                    out.write(formatter(text, parsed_line))
+                    out.write(formatter(text, parsed_line, name=args.name,
+                        description=args.description))
     except AttributeError as e:
         print('ERROR: Could not open log file %s' % latest)
 
