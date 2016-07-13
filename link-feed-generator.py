@@ -25,12 +25,11 @@ log_format = '[{timestamp}] <{user}> {message}\n'
 
 link_regex = re.compile(r"(http(s)?://[^ ]+)")
 
+description_format = '%s\nCreated by link-feed-generator.'
+
 
 class NoSuchFormatterException(Exception):
     pass
-
-
-import contextlib
 
 
 def get_log_line(line, format):
@@ -149,6 +148,8 @@ def main():
     if not formatter:
         raise NoSuchFormatterException("No format called %s" % format)
 
+    description = description_format % args.description
+
     # Find the most recent file.
 
     latest = get_file(args.input)
@@ -169,7 +170,7 @@ def main():
                 text = get_text_from_file(args.output)
                 with open(args.output, 'w') as out:
                     out.write(formatter(text, parsed_line, name=args.name,
-                        description=args.description))
+                        description=description))
     except AttributeError as e:
         print('ERROR: Could not open log file %s' % latest)
 
