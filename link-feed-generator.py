@@ -1,4 +1,4 @@
-""" An IRC log parser that extracts any links from designated channels
+""" A log parser that extracts any links from designated channels
 author: Brian Schrader
 since: 2016-07-11
 """
@@ -23,7 +23,7 @@ LogLine = namedtuple('LogLine', 'timestamp user link')
 
 log_format = '[{timestamp}] <{user}> {message}\n'
 
-link_regex = re.compile(r"(http(s)?://[^ ]+)")
+link_regex = re.compile(r".*(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)")
 
 description_format = '%s\nCreated by link-feed-generator.'
 
@@ -37,7 +37,9 @@ def get_log_line(line, format):
     if parsed:
         link = get_link(parsed['message'])
         if link:
-            message = link_regex.sub(r'<a href="\1">\1</a>', parsed['message'])
+            print('Found link: %s' % link)
+            anchor = r'<a href="%s">%s</a>' % (link, link)
+            message = parsed['message'].replace(link, anchor)
             return LogLine(dt_parse(parsed['timestamp']),
                     parsed['user'], message)
 
@@ -46,7 +48,7 @@ def get_link(text):
     """ Given a string of text, return the first link found or None """
     matches = re.match(link_regex, text)
     if matches:
-        return matches.group(0)
+        return matches.groups()[0]
 
 
 def rfc822(timestamp):
@@ -86,6 +88,7 @@ def get_file(input):
     if not files:
         return None
 
+    print('Multiple log files found. Using: %s' % files[-1])
     return files[-1]
 
 
@@ -116,7 +119,8 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('input',
-            help='An path to the given channel\'s logs.')
+            help='An path to the given channel\'s logs or an '
+            'individual log file.')
     parser.add_argument('-o', '--output',
             help='An output file to write.',
             default='-')
