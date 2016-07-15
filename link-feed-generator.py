@@ -166,17 +166,19 @@ def main():
             else '/tmp/link-logger-%s' % hashlib.md5(latest.encode('utf-8')).hexdigest())
 
     # Parse the logs.
-
-    try:
-        for line in Pygtail(latest, offset_file=offset_file):
-            parsed_line = get_log_line(line, args.format)
-            if parsed_line:
-                text = get_text_from_file(args.output)
-                with open(args.output, 'w') as out:
-                    out.write(formatter(text, parsed_line, name=args.name,
-                        description=description))
-    except AttributeError as e:
-        print('ERROR: Could not open log file %s' % latest)
+    while True:
+        try:
+            for line in Pygtail(latest, offset_file=offset_file):
+                parsed_line = get_log_line(line, args.format)
+                if parsed_line:
+                    text = get_text_from_file(args.output)
+                    with open(args.output, 'w') as out:
+                        out.write(formatter(text, parsed_line, name=args.name,
+                            description=description))
+            sleep(0.1)
+        except AttributeError as e:
+            print('ERROR: Could not open log file %s' % latest)
+            break
 
 
 if __name__ == '__main__':
